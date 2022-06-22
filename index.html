@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二维码识别</title>
+    <script src="./js/jsQR.js"></script>
+    <script src="./js/llqrcode.js"></script>
+    <script src="https://unpkg.com/qrcode-decoder"></script>
+</head>
+<style>
+    .container {
+        margin: 10px;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-around;
+    }
+
+    /* 通用css */
+    .box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        box-shadow: 0px 0px 20px #dddd;
+        width: 400px;
+    }
+
+    .row {
+        margin: 10px 0;
+    }
+
+    .canvas {
+        width: 300px;
+        border: 1px solid #12aa9c;
+    }
+
+    .title {
+        font-size: 20px;
+        font-weight: 400;
+    }
+
+    .upload-btn {
+        width: 100px;
+        height: 30px;
+        line-height: 30px;
+        padding: 0;
+        cursor: pointer;
+        background: #12aa9c;
+        border: 1px solid #12aa9c;
+        color: #fff;
+        border-radius: 20px;
+    }
+
+    .upload-input {
+        position: absolute;
+        width: 100px;
+        height: 30px;
+        line-height: 30px;
+        margin: 0 -20px 0;
+        cursor: pointer;
+        opacity: 0;
+    }
+
+    .result {
+        border: 1px solid #12aa9c;
+        width: 300px;
+        height: 20px;
+    }
+</style>
+
+<body>
+    <div class="container">
+        <div class="jsqr box">
+            <div class="title row">jsQR识别二维码</div>
+            <button class="row upload-btn">
+                <input id="upload-jsqr" class="upload-input" type="file">
+                <span>上传图片</span>
+            </button>
+            <canvas id="canvas-jsqr" class="row canvas"></canvas>
+            <input id="result-jsqr" class="row result" type="text" placeholder="二维码识别结果">
+        </div>
+
+        <div class="qrcode box">
+            <div class="title row">QRcode识别二维码</div>
+            <button class="row upload-btn">
+                <input id="upload-qrcode" class="upload-input" type="file">
+                <span>上传图片</span>
+            </button>
+            <canvas id="canvas-qrcode" class="row canvas"></canvas>
+            <input id="result-qrcode" class="row result" type="text" placeholder="二维码识别结果">
+        </div>
+        <div class="decoder box">
+            <div class="title row">qrcode decoder识别二维码</div>
+            <button class="row upload-btn">
+                <input id="upload-decoder" class="upload-input" type="file">
+                <span>上传图片</span>
+            </button>
+            <canvas id="canvas-decoder" class="row canvas"></canvas>
+            <input id="result-decoder" class="row result" type="text" placeholder="二维码识别结果">
+        </div>
+    </div>
+    <script>
+        // 文件转url
+        function getObjectURL(file, id) {
+            var url = null;
+            if (window.createObjectURL != undefined) { // basic
+                url = window.createObjectURL(file);
+            } else if (window.URL != undefined) { // mozilla(firefox)
+                url = window.URL.createObjectURL(file);
+            } else if (window.webkitURL != undefined) { // webkit or chrome
+                url = window.webkitURL.createObjectURL(file);
+            }
+
+            var img = new Image();
+            img.src = url;
+            img.onload = function () {
+                var c = document.getElementById(id);
+                var ctx = c.getContext('2d');
+                c.setAttribute('width', img.width);
+                c.setAttribute('height', img.height);
+                ctx.drawImage(img, 0, 0, img.width, img.height);
+            }
+            return url;
+        }
+    </script>
+    <script>
+        // jsQR识别
+        var fileJsqrId = document.getElementById('upload-jsqr');
+        fileJsqrId.addEventListener('change', function (e) {
+            const files = e.target.files;
+            const file = files[0];
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.addEventListener('load', (event) => {
+                var img = new Image();
+                img.src = event.target.result;
+                img.onload = function () {
+                    var c = document.getElementById('canvas-jsqr');
+                    var ctx = c.getContext('2d');
+                    c.setAttribute('width', img.width);
+                    c.setAttribute('height', img.height);
+                    ctx.drawImage(img, 0, 0, img.width, img.height);
+                    var imageData = ctx.getImageData(0, 0, img.width, img.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "dontInvert",
+                    });
+                    if (code) {
+                        document.getElementById('result-jsqr').value = code.data;
+                    } else {
+                        alert('ERROR！识别错误！')
+                    }
+                }
+            })
+        })
+
+
+        // qrcode识别
+        var fileQrcodeId = document.getElementById('upload-qrcode');
+        fileQrcodeId.onchange = function (e) {
+            const files = e.target.files;
+            const file = files[0];
+            console.log(file);
+            console.log(getObjectURL(file));
+            qrcode.decode(getObjectURL(file, 'canvas-qrcode'));
+            qrcode.callback = function (result) {
+                document.getElementById('result-qrcode').value = result;
+            }
+        }
+
+        // qrcode decoder 识别
+        var qrcodedecoder = document.getElementById('upload-decoder');
+        qrcodedecoder.onchange = function (e) {
+            const files = e.target.files;
+            const file = files[0];
+            var qr = new QrcodeDecoder();
+            qr.decodeFromImage(getObjectURL(file, 'canvas-decoder')).then((res) => {
+                document.getElementById('result-decoder').value = res.data;
+            });
+        }
+    </script>
+</body>
+
+</html>
